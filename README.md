@@ -11,14 +11,14 @@ Built by team **Useless AI** for the Google AI Hackathon.
 
 ```mermaid
 flowchart TD
-    subgraph Input Layer
+    subgraph InputLayer["Input Layer"]
         Text[Pasted Notes & Emails]
         PDF[PDF Reference Briefs]
         Docx[Word Documents]
         Image[UI Wireframes & PNGs]
     end
 
-    subgraph BRD Forge Core Pipeline
+    subgraph CorePipeline["BRD Forge Core Pipeline"]
         Ingest[Multi-Modal File Ingestion]
         Classifier[Domain Classifier]
         Gemini[Google Gemini 1.5 Pro Agent]
@@ -26,13 +26,13 @@ flowchart TD
         Explain[Explainability & Confidence Engine]
     end
 
-    subgraph Persistence & Export
+    subgraph DatabaseExport["Persistence & Export"]
         DB[(SQLite BigQuery Simulation)]
         ExportPDF[Styled PDF Report]
         ExportWord[Formatted Word Document]
     end
 
-    Input Layer --> Ingest
+    Text & PDF & Docx & Image --> Ingest
     Ingest --> Classifier
     Ingest --> Gemini
     Classifier --> Gemini
