@@ -1,0 +1,4 @@
+Security team note:
+- All authentication must use username + password only
+- No third party SSO providers allowed per security policy
+- Two factor authentication via SMS is mandatory

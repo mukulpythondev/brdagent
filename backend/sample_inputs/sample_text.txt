@@ -1,0 +1,10 @@
+Project: Online Banking Portal
+Stakeholders: Product Manager (John), Dev Lead (Sarah), Compliance Officer (Mike)
+Requirements discussed:
+- Users must login using SSO with Google/Microsoft
+- Dashboard should show account balance in real-time
+- Transaction history for last 12 months
+- Mobile responsive design mandatory
+- Must comply with PCI-DSS standards
+- Page load time under 2 seconds
+- Support 10,000 concurrent users

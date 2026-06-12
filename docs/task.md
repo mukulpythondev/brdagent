@@ -1,0 +1,28 @@
+# Progress Checklist - FastAPI & React Integration (Sprint 2)
+
+- [/] **Phase 1: Reorganization & Setup**
+  - [x] Create `backend` directory and reorganize python files
+  - [x] Update `backend/requirements.txt` with new packages (`fastapi`, `uvicorn`, `python-multipart`, `firebase-admin`, `openpyxl`)
+  - [x] Update `backend/config.py` paths and SMTP credentials settings
+- [x] **Phase 2: Database & Sharing Utilities**
+  - [x] Implement Firebase service-account checker and `database/firebase_handler.py`
+  - [x] Update `database/db_handler.py` (or db manager) for dual-mode Firestore/SQLite storage
+  - [x] Create requirements Excel exporter utility in `backend/utils/`
+  - [x] Create SMTP email sharing utility in `backend/utils/`
+- [x] **Phase 3: FastAPI Server Development**
+  - [x] Create `backend/main.py` entry point with CORS and local JWT/Firebase auth validation middleware
+  - [x] Implement authentication endpoints (`/api/auth/login`, `/api/auth/signup`, `/api/auth/logout`)
+  - [x] Implement project endpoints (`GET /api/projects`, `GET /api/projects/{id}`, `DELETE /api/projects/{id}`, `PUT /api/projects/{id}`)
+  - [x] Implement requirements synthesis endpoint `POST /api/projects` (processing pasted text, files, and multi-modal analysis via `generate_brd`)
+  - [x] Implement conflict resolution `POST /api/projects/{id}/resolve` and versions listing `/api/projects/{id}/versions`
+  - [x] Implement PDF, DOCX, and Excel file export streams
+  - [x] Implement SMTP email sharing route `/api/projects/{id}/share`
+- [x] **Phase 4: Frontend AppContext Synchronization**
+  - [x] Update `frontend/src/context/AppContext.jsx` authentication and session persistence (connecting login/signup to API)
+  - [x] Update project operations (fetching active lists, loading project detail view, calling synthesis API with files/form data)
+  - [x] Wire up canvas edit saving and bulk requirements actions to API updates
+  - [x] Redirect file exports (PDF, Word, Excel) to server download endpoints
+  - [x] Wire up share email modal to API
+- [x] **Phase 5: Verification & Testing**
+  - [x] Verify local SQLite fallback mode works out-of-the-box (creating projects, deleting, updating, exporting)
+  - [x] Verify visual states and layout controls in frontend (resizable sidebar, scroll margins, analytics charts)
