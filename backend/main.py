@@ -1,10 +1,12 @@
 import os
 import json
 import logging
+import io
 import jwt
 import bcrypt
+import requests
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 from fastapi import FastAPI, HTTPException, Depends, Header, Request, Response, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -77,6 +79,30 @@ def verify_password(password: str, hashed: str) -> bool:
     except Exception:
         return False
 
+def ensure_demo_user():
+    """
+    Keeps a fixed local demo login ready for judges and team testing.
+    """
+    if is_firebase_enabled():
+        return
+
+    users = load_users()
+    email = config.DEMO_LOGIN_EMAIL
+    password = config.DEMO_LOGIN_PASSWORD
+    existing = users.get(email)
+
+    if existing and verify_password(password, existing.get("password", "")):
+        return
+
+    users[email] = {
+        "name": config.DEMO_LOGIN_NAME,
+        "password": hash_password(password)
+    }
+    save_users(users)
+    logger.info("Local demo login ensured for %s", email)
+
+ensure_demo_user()
+
 # --- Security Authentication Middleware Dependency ---
 
 async def get_current_user(request: Request) -> dict:
@@ -145,6 +171,98 @@ def health_check():
         "firebase_enabled": is_firebase_enabled(),
         "demo_mode": config.DEMO_MODE
     }
+
+@app.get("/api/system/integrations")
+def system_integrations():
+    """
+    Returns the configured integration state for demo and team-lead checks.
+    """
+    try:
+        active_db_mode = db_manager.get_db_mode()
+        return {
+            "app": {
+                "name": config.APP_NAME,
+                "version": config.APP_VERSION,
+                "demo_mode": config.DEMO_MODE,
+            },
+            "database": {
+                "active_mode": active_db_mode,
+                "bigquery_configured": bool(config.BQ_PROJECT_ID and config.BQ_CREDENTIALS_PATH),
+                "bigquery_active": active_db_mode == "bigquery",
+                "firebase_enabled": is_firebase_enabled(),
+            },
+            "storage": {
+                "gcs_configured": bool(config.GCS_BUCKET_NAME and config.GCS_CREDENTIALS_PATH),
+                "bucket": config.GCS_BUCKET_NAME or None,
+            },
+            "ai": {
+                "provider": config.AI_PROVIDER,
+                "openai_configured": bool(config.OPENAI_API_KEY),
+                "gemini_configured": bool(config.GEMINI_API_KEY),
+                "vertex_configured": bool(config.VERTEX_PROJECT_ID and config.VERTEX_CREDENTIALS_PATH),
+                "fast_model": config.OPENAI_FAST_MODEL if config.AI_PROVIDER == "openai" else config.GEMINI_FAST_MODEL,
+                "advanced_model": config.OPENAI_ADVANCED_MODEL if config.AI_PROVIDER == "openai" else config.GEMINI_ADVANCED_MODEL,
+                "vision_model": config.OPENAI_VISION_MODEL if config.AI_PROVIDER == "openai" else config.GEMINI_VISION_MODEL,
+                "adaptive_model_routing": True,
+            },
+            "email": {
+                "smtp_configured": bool(config.SMTP_USERNAME and config.SMTP_PASSWORD),
+                "from_email": config.SMTP_FROM_EMAIL,
+            },
+        }
+    except Exception as e:
+        logger.error(f"Error loading integration status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/system/openai-test")
+def openai_test():
+    """
+    Performs a tiny live OpenAI call without exposing credentials.
+    Useful for demo setup checks before uploading BRD inputs.
+    """
+    if config.AI_PROVIDER != "openai":
+        raise HTTPException(status_code=400, detail=f"AI_PROVIDER is set to {config.AI_PROVIDER}, not openai")
+    if not config.OPENAI_API_KEY:
+        raise HTTPException(status_code=400, detail="OPENAI_API_KEY is not configured")
+
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers={
+                "Authorization": f"Bearer {config.OPENAI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": config.OPENAI_FAST_MODEL,
+                "input": "Reply with only: OpenAI test OK",
+                "temperature": 0,
+                "max_output_tokens": 20,
+            },
+            timeout=config.OPENAI_TIMEOUT_SECONDS,
+            verify=config.OPENAI_VERIFY_SSL,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        output_text = payload.get("output_text", "")
+        if not output_text:
+            output_text = "".join(
+                content.get("text", "")
+                for item in payload.get("output", [])
+                for content in item.get("content", [])
+                if content.get("type") in ("output_text", "text")
+            )
+        return {
+            "status": "success",
+            "provider": "openai",
+            "model": config.OPENAI_FAST_MODEL,
+            "message": output_text.strip() or "OpenAI responded successfully",
+        }
+    except requests.RequestException as e:
+        detail = str(e)
+        if getattr(e, "response", None) is not None:
+            detail = e.response.text[:500]
+        logger.error(f"OpenAI test failed: {detail}")
+        raise HTTPException(status_code=502, detail=detail)
 
 # --- 1. Authentication Endpoints ---
 
@@ -245,7 +363,7 @@ async def generate_project_brd(
     project_name: str = Form(...),
     domain_selection: str = Form("Auto-detect"),
     pasted_text: str = Form(""),
-    files: Optional[List[UploadFile]] = File(None),
+    files: Optional[Union[List[UploadFile], UploadFile]] = File(None),
     current_user: dict = Depends(get_current_user)
 ):
     try:
@@ -261,7 +379,8 @@ async def generate_project_brd(
             
         # 2. Process File Ingestion
         if files:
-            for file in files:
+            upload_files = files if isinstance(files, list) else [files]
+            for file in upload_files:
                 if not file.filename:
                     continue
                 filename = file.filename

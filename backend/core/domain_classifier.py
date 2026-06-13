@@ -65,7 +65,7 @@ def classify_domain(text: str) -> dict:
         domain = "Enterprise"
         
     # 2. Try Gemini classification if not in demo mode
-    if not config.DEMO_MODE and config.GEMINI_API_KEY:
+    if config.AI_PROVIDER != "openai" and not config.DEMO_MODE and config.GEMINI_API_KEY:
         try:
             genai.configure(api_key=config.GEMINI_API_KEY)
             model = genai.GenerativeModel('gemini-1.5-pro')
@@ -78,7 +78,10 @@ def classify_domain(text: str) -> dict:
             
             Return ONLY the classified domain word. Do not add punctuation.
             """
-            response = model.generate_content(prompt)
+            response = model.generate_content(
+                prompt,
+                request_options={"timeout": config.GEMINI_TIMEOUT_SECONDS},
+            )
             classified = response.text.strip()
             if classified in DOMAIN_METADATA:
                 domain = classified

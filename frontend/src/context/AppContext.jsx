@@ -9,6 +9,34 @@ const DEFAULT_USER = {
   role: 'Workspace Architect'
 };
 
+const normalizeProject = (project) => {
+  if (!project) return project;
+  let brdJson = project.brd_json;
+  if (typeof brdJson === 'string') {
+    try {
+      brdJson = JSON.parse(brdJson);
+    } catch {
+      brdJson = null;
+    }
+  }
+
+  if (!brdJson || typeof brdJson !== 'object') {
+    return project;
+  }
+
+  return {
+    ...project,
+    ...brdJson,
+    id: project.id || brdJson.id,
+    project_name: project.project_name || brdJson.project_name,
+    created_at: project.created_at || brdJson.created_at,
+    confidence_score: project.confidence_score ?? brdJson.confidence_score,
+    total_requirements: project.total_requirements ?? brdJson.total_requirements,
+    conflict_count: project.conflict_count ?? brdJson.conflict_count,
+    brd_json: brdJson
+  };
+};
+
 export function AppProvider({ children }) {
   const [activePage, setActivePage] = useState('dashboard'); // dashboard, ingest, editor, analytics, settings
   const [projects, setProjects] = useState([]);
@@ -86,8 +114,21 @@ export function AppProvider({ children }) {
       });
       if (!response.ok) throw new Error('Failed to load projects');
       const data = await response.json();
-      const loadedProjects = data.projects || [];
-      setProjects(loadedProjects);
+      const loadedProjects = (data.projects || []).map(normalizeProject);
+      setProjects(prev => {
+        const existingById = new Map(prev.map(project => [project.id, project]));
+        return loadedProjects.map(summaryProject => {
+          const existingProject = existingById.get(summaryProject.id);
+          if (!existingProject?.brd_json) {
+            return summaryProject;
+          }
+          return normalizeProject({
+            ...existingProject,
+            ...summaryProject,
+            brd_json: existingProject.brd_json
+          });
+        });
+      });
       
       // Select first project if available and none selected
       if (loadedProjects.length > 0 && !selectedProjectId) {
@@ -250,7 +291,8 @@ export function AppProvider({ children }) {
       if (!response.ok) throw new Error('Failed to load project details');
       const data = await response.json();
       
-      setProjects(prev => prev.map(p => p.id === projectId ? data.project : p));
+      const normalizedProject = normalizeProject(data.project);
+      setProjects(prev => prev.map(p => p.id === projectId ? normalizedProject : p));
       
       // 2. Fetch versions
       const vResponse = await fetch(`/api/projects/${projectId}/versions`, {
@@ -475,9 +517,14 @@ export function AppProvider({ children }) {
       clearInterval(stepInterval);
       setPipelineStep(4);
 
-      // Refresh project database list and load the new project
-      await fetchProjects();
-      setSelectedProjectId(data.project.id);
+      // Use the generated project returned by the API immediately so the
+      // visualizer does not render stale list state after creation.
+      const generatedProject = normalizeProject(data.project);
+      setProjects(prev => {
+        const withoutDuplicate = prev.filter(p => p.id !== generatedProject.id);
+        return [generatedProject, ...withoutDuplicate];
+      });
+      setSelectedProjectId(generatedProject.id);
       
       setIsGenerating(false);
       setPipelineStep(0);

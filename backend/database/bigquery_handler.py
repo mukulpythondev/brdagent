@@ -12,6 +12,7 @@ import uuid
 import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -294,5 +295,7 @@ def get_versions_bigquery(project_id: str) -> List[Dict[str, Any]]:
     return results
 
 
-# Auto-initialize on module import
-init_bigquery()
+# Auto-initialize only when explicitly enabled. This keeps local demo startup fast
+# even when cloud credentials are present but network access is unavailable.
+if config.ENABLE_BIGQUERY:
+    init_bigquery()

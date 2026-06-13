@@ -6,6 +6,10 @@ venv/
 .venv/
 env/
 .env
+.env.local
+firebase-key.json
+gcp-key.json
+*-firebase-adminsdk-*.json
 
 # Streamlit
 .streamlit/
@@ -13,6 +17,7 @@ env/
 # Database
 *.db
 *.db-journal
+users.json
 
 # Project Ingestion/Outputs
 uploads/

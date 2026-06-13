@@ -10,7 +10,8 @@ import {
   ChevronDown, ChevronRight, AlertOctagon, Download,
   FileText, FileSpreadsheet, Mail, Trash2, ArrowUpDown,
   Shield, Target, Users, CheckSquare, Lightbulb,
-  BookOpen, ListChecks, TrendingUp, Palette, Share2, Printer, LayoutDashboard
+  BookOpen, ListChecks, TrendingUp, Palette, Share2, Printer, LayoutDashboard,
+  BrainCircuit
 } from 'lucide-react';
 import ProfileDropdown from '../components/ProfileDropdown';
 
@@ -66,7 +67,8 @@ export default function VisualizerPage({ showAnalytics = false }) {
     risks: useRef(null),
     assumptions: useRef(null),
     acceptance: useRef(null),
-    domain: useRef(null)
+    domain: useRef(null),
+    architecture: useRef(null)
   };
 
   const handleScrollToSection = (sectionId) => {
@@ -116,6 +118,20 @@ export default function VisualizerPage({ showAnalytics = false }) {
     { subject: 'Encryption Level', A: 92, fullMark: 100 },
     { subject: 'Latency Resiliency', A: 80, fullMark: 100 }
   ];
+
+  const aiArchitecture = activeProject.ai_architecture;
+  const modelRoutes = activeProject.model_routing_decisions || [];
+  const isSummaryOnlyProject = !activeProject.brd_json && totalReqs === 0 && (activeProject.total_requirements || 0) > 0;
+
+  if (isSummaryOnlyProject) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-16 text-center">
+        <FileText size={42} className="mx-auto text-blue-500 mb-4 animate-pulse" />
+        <h3 className="text-base font-bold text-zinc-700 dark:text-zinc-300">Loading BRD details</h3>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2 max-w-xs mx-auto">Fetching the full generated requirements document...</p>
+      </div>
+    );
+  }
 
   const toggleReqSelection = (id) => {
     setSelectedReqs(prev => {
@@ -543,7 +559,8 @@ export default function VisualizerPage({ showAnalytics = false }) {
                 { id: 'risks', label: 'Risks' },
                 { id: 'assumptions', label: 'Assumptions' },
                 { id: 'acceptance', label: 'Acceptance' },
-                { id: 'domain', label: 'Industry' }
+                { id: 'domain', label: 'Industry' },
+                { id: 'architecture', label: 'AI Routing' }
               ].map((sec) => {
                 const isSelected = activeSection === sec.id;
                 return (
@@ -690,6 +707,50 @@ export default function VisualizerPage({ showAnalytics = false }) {
                       </div>
                     ) : (
                       <p className="text-xs text-zinc-400">No industry data configured.</p>
+                    )}
+                  </DocumentSection>
+
+                  <DocumentSection id="architecture" title="Adaptive AI Routing" icon={BrainCircuit}>
+                    {aiArchitecture ? (
+                      <div className="space-y-5">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="rounded-xl bg-zinc-50/70 dark:bg-zinc-800/30 p-3">
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-zinc-400">Inputs</span>
+                            <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mt-1">{aiArchitecture.input_count}</p>
+                          </div>
+                          <div className="rounded-xl bg-zinc-50/70 dark:bg-zinc-800/30 p-3">
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-zinc-400">Modalities</span>
+                            <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mt-1">{aiArchitecture.input_modalities?.join(', ')}</p>
+                          </div>
+                          <div className="rounded-xl bg-zinc-50/70 dark:bg-zinc-800/30 p-3">
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-zinc-400">Models</span>
+                            <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mt-1">{aiArchitecture.models_used?.join(', ')}</p>
+                          </div>
+                          <div className="rounded-xl bg-zinc-50/70 dark:bg-zinc-800/30 p-3">
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-zinc-400">Advanced</span>
+                            <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mt-1">{aiArchitecture.advanced_decisions}/{aiArchitecture.total_decisions}</p>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{aiArchitecture.strategy}</p>
+
+                        <div className="space-y-2.5">
+                          {modelRoutes.slice(0, 6).map((route, idx) => (
+                            <div key={`${route.purpose}-${idx}`} className="rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/30 p-3">
+                              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                <span className="font-mono text-[10px] font-bold text-blue-600 dark:text-blue-400">{route.model}</span>
+                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-bold uppercase">{route.purpose?.replaceAll('_', ' ')}</span>
+                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-bold uppercase">{route.tier}</span>
+                              </div>
+                              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                {route.reasons?.join(' | ')}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-zinc-400">Generate a new BRD to see adaptive model routing details.</p>
                     )}
                   </DocumentSection>
 

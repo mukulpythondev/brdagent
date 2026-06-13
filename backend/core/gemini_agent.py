@@ -2,35 +2,135 @@ import os
 import json
 import logging
 import time
+import base64
 from typing import List, Dict, Any
+import requests
 import google.generativeai as genai
 import config
+from core.model_router import route_model
 
 logger = logging.getLogger(__name__)
 
 class GeminiAgent:
     def __init__(self):
-        self.api_key = config.GEMINI_API_KEY
+        self.provider = config.AI_PROVIDER
+        self.api_key = config.OPENAI_API_KEY if self.provider == "openai" else config.GEMINI_API_KEY
         self.demo_mode = config.DEMO_MODE
-        
-        # Check if API key is placeholders or empty
-        if not self.api_key or "your_gemini_api_key_here" in self.api_key:
-            logger.warning("Gemini API key is not configured. Falling back to Demo Mode.")
+        self._model_cache = {}
+        self.routing_decisions = []
+
+        if not self.api_key or "your_" in self.api_key:
+            logger.warning("%s API key is not configured. Falling back to Demo Mode.", self.provider.upper())
             self.demo_mode = True
-        else:
+        elif self.provider != "openai":
             try:
                 genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-1.5-pro')
             except Exception as e:
                 logger.error(f"Failed to configure Gemini client: {e}. Falling back to Demo Mode.")
                 self.demo_mode = True
+
+    def _get_model(self, model_name: str):
+        if model_name not in self._model_cache:
+            self._model_cache[model_name] = genai.GenerativeModel(model_name)
+        return self._model_cache[model_name]
+
+    def _generate_text(self, prompt: str, route, image_bytes: bytes = None) -> str:
+        if self.provider == "openai":
+            return self._generate_openai(prompt, route.model, image_bytes=image_bytes)
+
+        if image_bytes:
+            image_part = {
+                "mime_type": "image/png",
+                "data": image_bytes,
+            }
+            response = self._get_model(route.model).generate_content(
+                [prompt, image_part],
+                request_options={"timeout": config.GEMINI_TIMEOUT_SECONDS},
+            )
+        else:
+            response = self._get_model(route.model).generate_content(
+                prompt,
+                request_options={"timeout": config.GEMINI_TIMEOUT_SECONDS},
+            )
+        return response.text
+
+    def _generate_openai(self, prompt: str, model_name: str, image_bytes: bytes = None) -> str:
+        url = "https://api.openai.com/v1/responses"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model_name,
+            "input": prompt,
+            "temperature": 0.2,
+            "store": False,
+        }
+
+        if image_bytes:
+            image_b64 = base64.b64encode(image_bytes).decode("ascii")
+            payload["input"] = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": prompt},
+                        {"type": "input_image", "image_url": f"data:image/png;base64,{image_b64}"},
+                    ],
+                }
+            ]
+
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=config.OPENAI_TIMEOUT_SECONDS,
+            verify=config.OPENAI_VERIFY_SSL,
+        )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("output_text"):
+            return data["output_text"]
+
+        chunks = []
+        for item in data.get("output", []):
+            for content in item.get("content", []):
+                if content.get("type") in {"output_text", "text"} and content.get("text"):
+                    chunks.append(content["text"])
+        return "\n".join(chunks).strip()
+
+    def _record_route(self, route):
+        route_dict = route.to_dict()
+        self.routing_decisions.append(route_dict)
+        logger.info(
+            "Model route selected: purpose=%s modality=%s model=%s tier=%s complexity=%s",
+            route.purpose,
+            route.modality,
+            route.model,
+            route.tier,
+            route.complexity,
+        )
+        return route_dict
+
+    def get_routing_decisions(self) -> List[Dict[str, Any]]:
+        return list(self.routing_decisions)
+
+    def _attach_route(self, payload: dict, route_dict: dict) -> dict:
+        payload["model_route"] = route_dict
+        return payload
 
     def analyze_text(self, text: str, source_name: str = "Pasted Text") -> dict:
         """
         Extracts: entities, requirements, constraints, assumptions, stakeholders.
         """
+        route = route_model(
+            purpose="text_extraction",
+            modality="text",
+            text=text,
+        )
+        route_dict = self._record_route(route)
+
         if self.demo_mode:
-            return self._mock_analyze_text(text, source_name)
+            return self._attach_route(self._mock_analyze_text(text, source_name), route_dict)
             
         prompt = f"""
         You are a senior Business Analyst. Analyze the following project text input and extract a structured set of requirements details.
@@ -60,18 +160,26 @@ class GeminiAgent:
         """
         
         try:
-            response = self.model.generate_content(prompt)
-            return self._parse_json_response(response.text)
+            response_text = self._generate_text(prompt, route)
+            return self._attach_route(self._parse_json_response(response_text), route_dict)
         except Exception as e:
-            logger.error(f"Gemini API Error in analyze_text: {e}. Using mock fallback.")
-            return self._mock_analyze_text(text, source_name)
+            logger.error(f"{self.provider.upper()} API Error in analyze_text: {e}. Using mock fallback.")
+            return self._attach_route(self._mock_analyze_text(text, source_name), route_dict)
 
     def analyze_image(self, image_bytes: bytes, source_name: str = "Uploaded Image") -> dict:
         """
         Sends image to Gemini Vision. Extracts UI elements, flows, labels, implied requirements.
         """
+        route = route_model(
+            purpose="image_understanding",
+            modality="image",
+            text=source_name,
+            has_image=True,
+        )
+        route_dict = self._record_route(route)
+
         if self.demo_mode or not image_bytes:
-            return self._mock_analyze_image(source_name)
+            return self._attach_route(self._mock_analyze_image(source_name), route_dict)
             
         prompt = f"""
         You are an expert System Architect. Analyze this image (which may be a wireframe, UI screenshot, flow diagram, or architecture sketch).
@@ -94,25 +202,25 @@ class GeminiAgent:
         """
         
         try:
-            # Format image data for Gemini API
-            image_parts = [
-                {
-                    "mime_type": "image/png", # default to png
-                    "data": image_bytes
-                }
-            ]
-            response = self.model.generate_content([prompt, image_parts[0]])
-            return self._parse_json_response(response.text)
+            response_text = self._generate_text(prompt, route, image_bytes=image_bytes)
+            return self._attach_route(self._parse_json_response(response_text), route_dict)
         except Exception as e:
-            logger.error(f"Gemini API Error in analyze_image: {e}. Using mock fallback.")
-            return self._mock_analyze_image(source_name)
+            logger.error(f"{self.provider.upper()} API Error in analyze_image: {e}. Using mock fallback.")
+            return self._attach_route(self._mock_analyze_image(source_name), route_dict)
 
     def analyze_pdf(self, pdf_text: str, source_name: str = "Uploaded PDF") -> dict:
         """
         Processes extracted PDF text. Identifies functional, non-functional, and scope items.
         """
+        route = route_model(
+            purpose="document_extraction",
+            modality="pdf",
+            text=pdf_text,
+        )
+        route_dict = self._record_route(route)
+
         if self.demo_mode:
-            return self._mock_analyze_pdf(pdf_text, source_name)
+            return self._attach_route(self._mock_analyze_pdf(pdf_text, source_name), route_dict)
             
         prompt = f"""
         You are a senior Business Analyst. Analyze the following PDF document contents.
@@ -143,11 +251,11 @@ class GeminiAgent:
         """
         
         try:
-            response = self.model.generate_content(prompt)
-            return self._parse_json_response(response.text)
+            response_text = self._generate_text(prompt, route)
+            return self._attach_route(self._parse_json_response(response_text), route_dict)
         except Exception as e:
-            logger.error(f"Gemini API Error in analyze_pdf: {e}. Using mock fallback.")
-            return self._mock_analyze_pdf(pdf_text, source_name)
+            logger.error(f"{self.provider.upper()} API Error in analyze_pdf: {e}. Using mock fallback.")
+            return self._attach_route(self._mock_analyze_pdf(pdf_text, source_name), route_dict)
 
     def synthesize_all(self, inputs: List[Dict[str, Any]], project_name: str = "My Project", custom_domain: str = "Auto-detect") -> dict:
         """
@@ -155,9 +263,24 @@ class GeminiAgent:
         scores requirements, and structures a master BRD.
         """
         if self.demo_mode:
-            return self._mock_synthesize_all(inputs, project_name, custom_domain)
-            
+            route = route_model(
+                purpose="synthesis",
+                modality="multi_source",
+                text=json.dumps(inputs),
+                input_count=len(inputs),
+            )
+            route_dict = self._record_route(route)
+            return self._attach_route(self._mock_synthesize_all(inputs, project_name, custom_domain), route_dict)
+
         inputs_json = json.dumps(inputs, indent=2)
+        route = route_model(
+            purpose="synthesis",
+            modality="multi_source",
+            text=inputs_json,
+            input_count=len(inputs),
+            has_image=any("implied_requirements" in inp for inp in inputs),
+        )
+        route_dict = self._record_route(route)
         
         prompt = f"""
 You are an expert Business Analyst AI. You have received the following analyzed inputs from multiple sources:
@@ -219,11 +342,11 @@ Your task:
 """
         
         try:
-            response = self.model.generate_content(prompt)
-            return self._parse_json_response(response.text)
+            response_text = self._generate_text(prompt, route)
+            return self._attach_route(self._parse_json_response(response_text), route_dict)
         except Exception as e:
-            logger.error(f"Gemini API Error in synthesize_all: {e}. Using mock fallback.")
-            return self._mock_synthesize_all(inputs, project_name, custom_domain)
+            logger.error(f"{self.provider.upper()} API Error in synthesize_all: {e}. Using mock fallback.")
+            return self._attach_route(self._mock_synthesize_all(inputs, project_name, custom_domain), route_dict)
 
     # --- PARSING & MOCK FALLBACKS ---
 

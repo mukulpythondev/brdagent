@@ -1,0 +1,48 @@
+Project: BRD Forge Enterprise Intake Platform
+
+Overview:
+The organization receives requirements from client emails, product workshops, screenshots, policy PDFs, and architecture notes. The platform must process this fragmented information and generate a single Business Requirements Document with traceability and conflict analysis.
+
+Stakeholders:
+- Product Manager
+- Business Analyst
+- Solution Architect
+- Compliance Officer
+- Engineering Lead
+- Client Operations Team
+
+Input Sources:
+The system should accept pasted notes, TXT files, DOCX files, PDFs, and wireframe images. Every input must be preserved with a source name so that generated requirements can be traced back to original evidence.
+
+Functional Requirements:
+1. Users must create a project workspace and upload multiple artifacts in one session.
+2. Users must paste raw meeting notes into a text area and combine them with file uploads.
+3. The system must classify each input by modality: text, document, image, or mixed bundle.
+4. The AI router must choose a low-latency model for short notes and an advanced model for long documents, compliance-heavy text, multi-source synthesis, and conflict detection.
+5. The generated BRD must include executive summary, objectives, scope, stakeholders, functional requirements, non-functional requirements, assumptions, risks, and acceptance criteria.
+6. Users must edit priorities and delete requirements from the visualizer.
+7. Users must resolve conflicts by keeping one requirement, keeping the other, or merging both.
+8. Users must export the BRD as PDF, DOCX, and XLSX.
+9. Users must view a model routing summary explaining which model was used and why.
+10. Users must see confidence scores and source traces for generated requirements.
+
+Non-Functional Requirements:
+1. The backend must expose REST APIs for auth, project generation, project CRUD, version history, conflict resolution, and exports.
+2. The system must support local fallback storage using SQLite for demo reliability.
+3. The architecture must support cloud storage and analytics through configured GCS and BigQuery credentials.
+4. The AI service must support provider switching and route decisions based on modality, length, complexity, and risk.
+5. The platform must keep secret keys outside Git commits.
+6. The UI must be usable on laptop demo screens with predictable navigation and visible status indicators.
+
+Conflict Notes:
+- Product wants Google/Microsoft SSO for enterprise convenience.
+- Security says external identity providers must be disabled and username/password must be the only login method.
+- Legal requires deletion on customer request.
+- Finance requires seven-year record retention for audit logs.
+
+Acceptance Criteria:
+1. A mixed-input project can be generated from pasted notes plus at least one uploaded file.
+2. The AI Routing panel shows fast and advanced model usage.
+3. The conflict drawer shows at least one authentication conflict or data retention conflict.
+4. PDF, DOCX, and XLSX exports download successfully.
+5. The integration status endpoint reports the active AI provider and configured cloud services.

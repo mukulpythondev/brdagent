@@ -21,7 +21,7 @@ flowchart TD
     subgraph CorePipeline["BRD Forge Core Pipeline"]
         Ingest[Multi-Modal File Ingestion]
         Classifier[Domain Classifier]
-        Gemini[Google Gemini 1.5 Pro Agent]
+        AI[OpenAI Adaptive Model Router]
         Conflict[Conflict Detector]
         Explain[Explainability & Confidence Engine]
     end
@@ -34,9 +34,9 @@ flowchart TD
 
     Text & PDF & Docx & Image --> Ingest
     Ingest --> Classifier
-    Ingest --> Gemini
-    Classifier --> Gemini
-    Gemini --> Conflict
+    Ingest --> AI
+    Classifier --> AI
+    AI --> Conflict
     Conflict --> Explain
     Explain --> DB
     Explain --> ExportPDF
@@ -67,7 +67,7 @@ brd-forge/
 ├── config.py               # Theme colors, thresholds, paths configurations
 ├── core/
 │   ├── ingestion.py        # Stream-based file parsers
-│   ├── gemini_agent.py     # Gemini client orchestration
+│   ├── gemini_agent.py     # OpenAI primary orchestration with legacy-compatible name
 │   ├── brd_generator.py    # Multi-step BRD generation flow
 │   ├── conflict_detector.py # Pairing contradictions checking
 │   ├── explainability.py   # Confidence metrics and source trace logging
@@ -128,4 +128,3 @@ streamlit run app.py
 - **Mukul Rana**
 - **Manideep Bishnoi**
 - **Shanu Prajapati**
-

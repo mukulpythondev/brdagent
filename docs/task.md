@@ -26,3 +26,31 @@
 - [x] **Phase 5: Verification & Testing**
   - [x] Verify local SQLite fallback mode works out-of-the-box (creating projects, deleting, updating, exporting)
   - [x] Verify visual states and layout controls in frontend (resizable sidebar, scroll margins, analytics charts)
+
+---
+
+## Mentor Change - Adaptive Multi-Model AI Routing
+
+- [x] Add adaptive model router for modality, input length, complexity, and risk.
+- [x] Route short/simple text extraction to `GEMINI_FAST_MODEL`.
+- [x] Route long PDFs/documents, multi-source synthesis, and conflict reasoning to `GEMINI_ADVANCED_MODEL`.
+- [x] Route image/wireframe analysis to `GEMINI_VISION_MODEL`.
+- [x] Store model route reasons in generated BRD payload as `model_routing_decisions`.
+- [x] Store demo-ready architecture summary in generated BRD payload as `ai_architecture`.
+- [x] Add AI Routing section in the React visualizer.
+- [x] Add env-tunable model settings and token thresholds.
+
+## Full Demo Remaining TODO
+
+- [ ] Restart backend after credential/env changes.
+- [x] Verify live OpenAI generation with one short pasted text input.
+- [ ] Verify adaptive routing with mixed inputs: pasted text + PDF/DOCX + image.
+- [ ] Verify GCS bucket access for `brd-forge-uploads`.
+- [ ] Verify BigQuery project save/list/detail flow for `brdagent-499304`.
+- [ ] Verify optional Vertex AI credentials/API access only if Google Cloud runtime is shown.
+- [ ] Generate one polished demo project and confirm AI Routing section appears.
+- [ ] Test conflict detection using SSO vs password-only sample.
+- [ ] Export PDF, DOCX, and XLSX from the same generated project.
+- [ ] Add Gmail App Password to `SMTP_PASSWORD` if email sharing must be shown.
+- [ ] Upgrade Node from `20.16.0` to `20.19+` or `22.12+` before final demo.
+- [ ] Decide whether to implement or remove docs reference to `/api/system/integrations`.

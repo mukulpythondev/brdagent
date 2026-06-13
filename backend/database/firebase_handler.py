@@ -3,6 +3,7 @@ import logging
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ db_client = None
 firebase_enabled = False
 
 # Initialize Firebase if installed and credential key is present
-if FIREBASE_INSTALLED:
+if FIREBASE_INSTALLED and config.ENABLE_FIREBASE:
     # Look for firebase-key.json in the backend root directory
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     key_path = os.path.join(base_dir, "firebase-key.json")
@@ -39,6 +40,8 @@ if FIREBASE_INSTALLED:
             logger.error(f"Failed to initialize Firebase with service account key: {e}")
     else:
         logger.info("firebase-key.json not found in backend root. Firebase features disabled (local fallback mode).")
+elif FIREBASE_INSTALLED:
+    logger.info("Firebase installed but ENABLE_FIREBASE is false. Using local JWT/SQLite demo mode.")
 else:
     logger.info("firebase-admin package not installed. Firebase features disabled (local fallback mode).")
 

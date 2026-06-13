@@ -3,6 +3,9 @@ import json
 import logging
 import uuid
 from typing import List, Dict, Any
+from core.model_router import route_model
+import config
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -130,24 +133,31 @@ def _detect_gemini_semantic(requirements: List[Dict[str, Any]]) -> List[Dict[str
     Analyzes requirement pairs for logical contradictions that rule-based checks miss.
     Only runs if GEMINI_API_KEY is configured.
     """
-    import config
-    api_key = config.GEMINI_API_KEY
+    api_key = config.OPENAI_API_KEY if config.AI_PROVIDER == "openai" else config.GEMINI_API_KEY
 
     if not api_key:
-        logger.info("Gemini API key not configured. Skipping semantic conflict analysis.")
+        logger.info("AI API key not configured. Skipping semantic conflict analysis.")
         return []
 
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-    except ImportError:
-        logger.warning("google-generativeai not installed. Skipping semantic analysis.")
-        return []
+    if config.AI_PROVIDER != "openai":
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+        except ImportError:
+            logger.warning("google-generativeai not installed. Skipping semantic analysis.")
+            return []
 
     # Format requirements for the prompt
     req_text = ""
     for r in requirements:
         req_text += f"- [{r.get('id')}] {r.get('title')}: {r.get('description')}\n"
+
+    route = route_model(
+        purpose="conflict_detection",
+        modality="requirements",
+        text=req_text,
+        input_count=len(requirements),
+    )
 
     prompt = f"""You are an expert Business Analyst AI. Analyze the following business requirements and identify ANY logical contradictions, conflicts, or inconsistencies between them.
 
@@ -171,9 +181,39 @@ def _detect_gemini_semantic(requirements: List[Dict[str, Any]]) -> List[Dict[str
 """
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-pro")
-        response = model.generate_content(prompt)
-        response_text = response.text.strip()
+        if config.AI_PROVIDER == "openai":
+            response = requests.post(
+                "https://api.openai.com/v1/responses",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": route.model,
+                    "input": prompt,
+                    "temperature": 0.2,
+                    "store": False,
+                },
+                timeout=config.OPENAI_TIMEOUT_SECONDS,
+                verify=config.OPENAI_VERIFY_SSL,
+            )
+            response.raise_for_status()
+            data = response.json()
+            response_text = data.get("output_text", "")
+            if not response_text:
+                chunks = []
+                for item in data.get("output", []):
+                    for content in item.get("content", []):
+                        if content.get("text"):
+                            chunks.append(content["text"])
+                response_text = "\n".join(chunks).strip()
+        else:
+            model = genai.GenerativeModel(route.model)
+            response = model.generate_content(
+                prompt,
+                request_options={"timeout": config.GEMINI_TIMEOUT_SECONDS},
+            )
+            response_text = response.text.strip()
 
         # Clean markdown code fences
         if response_text.startswith("```json"):
@@ -185,6 +225,8 @@ def _detect_gemini_semantic(requirements: List[Dict[str, Any]]) -> List[Dict[str
 
         parsed = json.loads(response_text.strip())
         if isinstance(parsed, list):
+            for conflict in parsed:
+                conflict["model_route"] = route.to_dict()
             logger.info(f"Gemini semantic analysis found {len(parsed)} additional conflicts.")
             return parsed
         return []

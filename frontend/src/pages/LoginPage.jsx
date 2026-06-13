@@ -3,12 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { Flame, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
+const DEMO_EMAIL = 'demo@brdforge.ai';
+const DEMO_PASSWORD = 'Demo@12345';
+
 export default function LoginPage() {
   const { handleLogin, handleSignup } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(DEMO_EMAIL);
+  const [password, setPassword] = useState(DEMO_PASSWORD);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e) => {
@@ -16,7 +19,7 @@ export default function LoginPage() {
     if (isSignUp) {
       handleSignup(name || 'User', email || 'user@brdforge.ai', password);
     } else {
-      handleLogin(email || 'john@brdforge.ai', password, name);
+      handleLogin(email || DEMO_EMAIL, password || DEMO_PASSWORD, name);
     }
   };
 
