@@ -288,7 +288,7 @@ You are an expert Business Analyst AI. You have received the following analyzed 
 {inputs_json}
 
 Your task:
-1. Generate a complete Business Requirements Document (BRD) for the project named "{project_name}" with these sections:
+1. Generate a complete but compact Business Requirements Document (BRD) for the project named "{project_name}" with these sections:
    - Executive Summary
    - Project Objectives (3-5 points)
    - Scope (In-Scope & Out-of-Scope)
@@ -299,15 +299,23 @@ Your task:
    - Risks & Mitigations
    - Acceptance Criteria
 
-2. For each requirement, add:
+2. Quality rules:
+   - Return dense business content, not generic filler.
+   - Prefer measurable requirements with actor, action, condition, and business value.
+   - Keep descriptions concise: 1-2 sentences per requirement.
+   - Include at least 5 functional requirements and 3 non-functional requirements when the source material supports it.
+   - Include risks, assumptions, and acceptance criteria even if some are inferred.
+   - Do not invent vendors, laws, budgets, or dates not implied by the inputs.
+
+3. For each requirement, add:
    - source: which input file/text/source it came from
    - confidence: HIGH / MEDIUM / LOW (HIGH if mentioned in multiple inputs or very detailed, MEDIUM if in single input with detail, LOW if inferred)
    - conflict: null OR description of conflict with another requirement (if they contradict or overlap problematicly)
    - priority: MUST HAVE / SHOULD HAVE / COULD HAVE
 
-3. Detect domain automatically from context. If a custom domain was selected ("{custom_domain}"), adjust template or contents to fit "{custom_domain}" style.
+4. Detect domain automatically from context. If a custom domain was selected ("{custom_domain}"), adjust template or contents to fit "{custom_domain}" style.
 
-4. Return ONLY valid JSON matching this structure:
+5. Return ONLY valid JSON matching this structure. Do not include markdown fences, comments, or explanatory prose:
 {{
   "project_name": "{project_name}",
   "domain": "",

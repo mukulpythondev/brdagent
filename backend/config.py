@@ -29,6 +29,7 @@ MODEL_ROUTER_RISK_TOKEN_THRESHOLD = int(os.getenv("MODEL_ROUTER_RISK_TOKEN_THRES
 GEMINI_TIMEOUT_SECONDS = int(os.getenv("GEMINI_TIMEOUT_SECONDS", 20))
 OPENAI_TIMEOUT_SECONDS = int(os.getenv("OPENAI_TIMEOUT_SECONDS", 60))
 OPENAI_VERIFY_SSL = os.getenv("OPENAI_VERIFY_SSL", "True").lower() in ("true", "1", "yes")
+GOOGLE_VERIFY_SSL = os.getenv("GOOGLE_VERIFY_SSL", os.getenv("OPENAI_VERIFY_SSL", "True")).lower() in ("true", "1", "yes")
 ENABLE_FIREBASE = os.getenv("ENABLE_FIREBASE", "False").lower() in ("true", "1", "yes")
 ENABLE_BIGQUERY = os.getenv("ENABLE_BIGQUERY", "False").lower() in ("true", "1", "yes")
 

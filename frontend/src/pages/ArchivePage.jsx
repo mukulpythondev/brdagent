@@ -183,7 +183,12 @@ export default function ArchivePage() {
 
                   <div className="flex items-center justify-between">
                     <button
-                      onClick={() => handleDeleteProject(proj.id)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (window.confirm(`Delete "${proj.project_name}" from the archive?`)) {
+                          handleDeleteProject(proj.id);
+                        }
+                      }}
                       className="p-1.5 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-all cursor-pointer border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
                       title="Delete Project"
                     >

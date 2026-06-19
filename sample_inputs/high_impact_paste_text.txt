@@ -1,0 +1,43 @@
+Subject: SecurePay SME Lending Portal - rough notes from product, risk, and operations
+
+This is not a clean requirement document. It is a mixed note from a product call, a risk review, and an operations escalation.
+
+Business goal:
+We want a portal where small business customers can apply for a working-capital loan, upload KYC documents, connect bank statements, and track application status from submission to approval.
+
+Product team notes:
+- Customer should sign in using Google or Microsoft SSO because many SMEs already use these accounts.
+- The dashboard should show application status, missing documents, repayment estimate, and next action.
+- Customer can upload PAN, GST certificate, bank statement PDF, and owner identity proof.
+- If an application is incomplete for more than 48 hours, send email and SMS reminder.
+- Relationship managers need an internal review queue with filters for risk score, loan amount, and SLA age.
+- Customer should be able to download the sanction letter after approval.
+
+Risk and compliance notes:
+- KYC documents must be encrypted at rest.
+- Audit logs must keep every status change, reviewer action, and document download event for 7 years.
+- Applications above INR 25 lakh require manual risk approval before offer generation.
+- The system must flag mismatched applicant name between GST certificate and bank statement.
+- PCI-DSS is not directly applicable unless card repayment is added later, but privacy and data-retention controls are mandatory.
+
+Operations notes:
+- Current manual process takes 5 to 7 days. Target is under 24 hours for low-risk cases.
+- Relationship managers complain that requirements are scattered across email, WhatsApp screenshots, PDFs, and CRM notes.
+- Admin team wants CSV/Excel export of applications every day.
+- Legal team wants a clear acceptance criterion: no sanction letter should be generated until KYC, bank statement, and risk approval are complete.
+
+Potential conflict:
+Security team suggested username and password only because of internal policy, but product wants Google/Microsoft SSO to reduce onboarding friction.
+
+Non-functional expectations:
+- System should support 10,000 active SME users in the first quarter.
+- 99.9 percent monthly availability.
+- Search and filter in internal queue should respond within 2 seconds.
+- All sensitive documents must be encrypted at rest and in transit.
+- Role-based access is required for customer, relationship manager, risk approver, and admin.
+
+Acceptance examples:
+- A customer can submit a complete application with required documents.
+- A relationship manager can see the application in the review queue.
+- The system blocks sanction letter generation until mandatory checks are passed.
+- The BRD must show risks, assumptions, source trace, conflicts, and model routing decisions.

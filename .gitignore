@@ -18,6 +18,7 @@ gcp-key.json
 *.db
 *.db-journal
 users.json
+deleted_projects.json
 
 # Project Ingestion/Outputs
 uploads/

@@ -25,6 +25,7 @@ except ImportError:
 gcs_client = None
 gcs_bucket = None
 gcs_enabled = False
+GCS_TIMEOUT_SECONDS = 15
 
 def init_gcs():
     """
@@ -53,7 +54,7 @@ def init_gcs():
 
         gcs_bucket = gcs_client.bucket(bucket_name)
         # Test bucket access
-        gcs_bucket.exists()
+        gcs_bucket.exists(timeout=GCS_TIMEOUT_SECONDS)
         gcs_enabled = True
         logger.info(f"GCS initialized successfully. Bucket: {bucket_name}")
     except Exception as e:
@@ -72,6 +73,8 @@ def upload_file_to_gcs(local_path: str, remote_prefix: str = "uploads") -> Optio
     Falls back to local path if GCS is not enabled.
     """
     if not gcs_enabled:
+        init_gcs()
+    if not gcs_enabled:
         logger.debug(f"GCS disabled. File remains at local path: {local_path}")
         return local_path
 
@@ -82,7 +85,7 @@ def upload_file_to_gcs(local_path: str, remote_prefix: str = "uploads") -> Optio
         blob_name = f"{remote_prefix}/{timestamp}_{unique_id}_{filename}"
 
         blob = gcs_bucket.blob(blob_name)
-        blob.upload_from_filename(local_path)
+        blob.upload_from_filename(local_path, timeout=GCS_TIMEOUT_SECONDS)
 
         gcs_uri = f"gs://{gcs_bucket.name}/{blob_name}"
         logger.info(f"Uploaded to GCS: {gcs_uri}")
@@ -99,6 +102,8 @@ def upload_bytes_to_gcs(data: bytes, filename: str, remote_prefix: str = "export
     Returns the GCS public URL or blob path if successful.
     """
     if not gcs_enabled:
+        init_gcs()
+    if not gcs_enabled:
         return None
 
     try:
@@ -107,7 +112,7 @@ def upload_bytes_to_gcs(data: bytes, filename: str, remote_prefix: str = "export
         blob_name = f"{remote_prefix}/{timestamp}_{unique_id}_{filename}"
 
         blob = gcs_bucket.blob(blob_name)
-        blob.upload_from_string(data, content_type=content_type)
+        blob.upload_from_string(data, content_type=content_type, timeout=GCS_TIMEOUT_SECONDS)
 
         gcs_uri = f"gs://{gcs_bucket.name}/{blob_name}"
         logger.info(f"Uploaded bytes to GCS: {gcs_uri}")
@@ -122,6 +127,8 @@ def download_file_from_gcs(gcs_uri: str, local_dest: str) -> bool:
     Download a file from GCS to a local path.
     """
     if not gcs_enabled:
+        init_gcs()
+    if not gcs_enabled:
         return False
 
     try:
@@ -132,7 +139,7 @@ def download_file_from_gcs(gcs_uri: str, local_dest: str) -> bool:
             path = gcs_uri
 
         blob = gcs_bucket.blob(path)
-        blob.download_to_filename(local_dest)
+        blob.download_to_filename(local_dest, timeout=GCS_TIMEOUT_SECONDS)
         logger.info(f"Downloaded from GCS: {gcs_uri} -> {local_dest}")
         return True
     except Exception as e:
@@ -145,10 +152,12 @@ def list_files_in_gcs(prefix: str = "uploads") -> list:
     List all files under a prefix in the GCS bucket.
     """
     if not gcs_enabled:
+        init_gcs()
+    if not gcs_enabled:
         return []
 
     try:
-        blobs = gcs_bucket.list_blobs(prefix=prefix)
+        blobs = gcs_bucket.list_blobs(prefix=prefix, timeout=GCS_TIMEOUT_SECONDS)
         return [{"name": b.name, "size": b.size, "updated": str(b.updated)} for b in blobs]
     except Exception as e:
         logger.error(f"GCS list failed: {e}")
@@ -160,11 +169,13 @@ def delete_file_from_gcs(blob_name: str) -> bool:
     Delete a file from GCS.
     """
     if not gcs_enabled:
+        init_gcs()
+    if not gcs_enabled:
         return False
 
     try:
         blob = gcs_bucket.blob(blob_name)
-        blob.delete()
+        blob.delete(timeout=GCS_TIMEOUT_SECONDS)
         logger.info(f"Deleted from GCS: {blob_name}")
         return True
     except Exception as e:
@@ -172,5 +183,5 @@ def delete_file_from_gcs(blob_name: str) -> bool:
         return False
 
 
-# Auto-initialize on module import
-init_gcs()
+# GCS initializes lazily on first upload/list/download operation so backend
+# startup stays fast even when cloud networking is slow.

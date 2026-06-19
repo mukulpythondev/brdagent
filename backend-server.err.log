@@ -1,0 +1,62 @@
+INFO:     Started server process [18688]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:brdforge_backend:Ingested file upload: secure_pay_wireframe.png
+INFO:brdforge_backend:Synthesizing requirements for: Sample File Upload Demo
+INFO:core.brd_generator:Starting BRD generation pipeline for project 'Sample File Upload Demo'
+INFO:core.brd_generator:Analyzing input: Pasted Notes.txt of type: text
+INFO:core.gemini_agent:Model route selected: purpose=text_extraction modality=text model=gpt-4o-mini tier=fast_extraction complexity=basic
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.brd_generator:Analyzing input: secure_pay_wireframe.png of type: image
+INFO:core.gemini_agent:Model route selected: purpose=image_understanding modality=image model=gpt-4o tier=multimodal complexity=advanced
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.brd_generator:Running synthesis across all inputs...
+INFO:core.gemini_agent:Model route selected: purpose=synthesis modality=multi_source model=gpt-4o tier=multimodal complexity=advanced
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.brd_generator:Computing source tracing and confidence metrics...
+INFO:core.brd_generator:Running conflict checks...
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.conflict_detector:Gemini semantic analysis found 0 additional conflicts.
+INFO:core.brd_generator:BRD generation pipeline completed successfully.
+INFO:database.db_manager:Saving project to SQLite local table...
+INFO:brdforge_backend:Ingested file upload: secure_pay_wireframe.png
+INFO:brdforge_backend:Synthesizing requirements for: new project 
+INFO:core.brd_generator:Starting BRD generation pipeline for project 'new project '
+INFO:core.brd_generator:Analyzing input: secure_pay_wireframe.png of type: image
+INFO:core.gemini_agent:Model route selected: purpose=image_understanding modality=image model=gpt-4o tier=multimodal complexity=advanced
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.brd_generator:Running synthesis across all inputs...
+INFO:core.gemini_agent:Model route selected: purpose=synthesis modality=multi_source model=gpt-4o tier=multimodal complexity=advanced
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.brd_generator:Computing source tracing and confidence metrics...
+INFO:core.brd_generator:Running conflict checks...
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.conflict_detector:Gemini semantic analysis found 0 additional conflicts.
+INFO:core.brd_generator:BRD generation pipeline completed successfully.
+INFO:database.db_manager:Saving project to SQLite local table...
+INFO:brdforge_backend:Ingested file upload: secure_pay_wireframe.png
+INFO:brdforge_backend:Synthesizing requirements for: payment app 
+INFO:core.brd_generator:Starting BRD generation pipeline for project 'payment app '
+INFO:core.brd_generator:Analyzing input: secure_pay_wireframe.png of type: image
+INFO:core.gemini_agent:Model route selected: purpose=image_understanding modality=image model=gpt-4o tier=multimodal complexity=advanced
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.brd_generator:Running synthesis across all inputs...
+INFO:core.gemini_agent:Model route selected: purpose=synthesis modality=multi_source model=gpt-4o tier=multimodal complexity=advanced
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.brd_generator:Computing source tracing and confidence metrics...
+INFO:core.brd_generator:Running conflict checks...
+C:\Users\MUKUL\Documents\BRD Agent\venv\Lib\site-packages\urllib3\connectionpool.py:1110: InsecureRequestWarning: Unverified HTTPS request is being made to host 'api.openai.com'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+INFO:core.conflict_detector:Gemini semantic analysis found 0 additional conflicts.
+INFO:core.brd_generator:BRD generation pipeline completed successfully.
+INFO:database.db_manager:Saving project to SQLite local table...
